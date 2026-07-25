@@ -1,0 +1,13 @@
+{
+  "name": "siphira",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tailwindcss -i static/src/tailwind.css -o static/dist/site.css --watch",
+    "build": "tailwindcss -i static/src/tailwind.css -o static/dist/site.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.3",
+    "@tailwindcss/typography": "^0.5.13"
+  }
+}

@@ -1,0 +1,98 @@
+{% extends "site/base.html" %}
+{% load site_extras %}
+
+{% block title %}{{ project.name }} — {{ site.hero_name }}{% endblock %}
+{% block description %}{{ project.tagline|default:project.name }}{% endblock %}
+{% block og_title %}{{ project.name }}{% endblock %}
+{% block og_description %}{{ project.tagline|default:project.name }}{% endblock %}
+
+{% block content %}
+<article class="mx-auto max-w-3xl px-6 py-16">
+
+  <a href="/projects/" class="link-underline text-sm font-semibold">&larr; All projects</a>
+
+  <header class="mt-6">
+    <div class="flex items-center gap-2">
+      <span class="h-2 w-2 rounded-full {% if project.status_tone == 'sand' %}bg-sand{% elif project.status_tone == 'muted' %}bg-muted{% else %}bg-sage{% endif %}"></span>
+      <span class="label !text-[10px]">{{ project.get_status_display }}</span>
+      {% if project.started_at %}<span class="text-xs text-muted">· started {{ project.started_at|date:"F Y" }}</span>{% endif %}
+    </div>
+
+    <h1 class="mt-3 font-display text-4xl font-extrabold leading-tight sm:text-5xl">{{ project.name }}</h1>
+    {% if project.tagline %}<p class="mt-4 text-lg leading-relaxed text-muted">{{ project.tagline }}</p>{% endif %}
+
+    {% if project.url %}
+      <a href="{{ project.url }}" target="_blank" rel="noopener" class="btn-primary mt-6 !py-2 text-xs">Visit the site &rarr;</a>
+    {% endif %}
+  </header>
+
+  {% if project.cover %}
+    <img src="{{ project.cover.url }}" alt="" class="mt-10 w-full rounded-2xl object-cover shadow-soft">
+  {% endif %}
+
+  <!-- The four-part story. Any section left blank in admin simply doesn't render. -->
+  {% if project.problem %}
+    <section class="reveal mt-14">
+      <p class="label">The problem</p>
+      <div class="prose prose-siphira mt-3 max-w-none">{{ project.problem|markdown }}</div>
+    </section>
+  {% endif %}
+
+  {% if project.approach %}
+    <section class="reveal mt-12">
+      <p class="label">My approach</p>
+      <div class="prose prose-siphira mt-3 max-w-none">{{ project.approach|markdown }}</div>
+    </section>
+  {% endif %}
+
+  {% if project.progress %}
+    <section class="reveal mt-12">
+      <p class="label">Progress</p>
+      <div class="prose prose-siphira mt-3 max-w-none">{{ project.progress|markdown }}</div>
+    </section>
+  {% endif %}
+
+  {% if images %}
+    <section class="reveal mt-12">
+      <p class="label">Screenshots</p>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% for image in images %}
+          <figure>
+            <img src="{{ image.image.url }}" alt="{{ image.caption }}" class="w-full rounded-2xl object-cover shadow-soft">
+            {% if image.caption %}<figcaption class="mt-2 text-xs text-muted">{{ image.caption }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if updates %}
+    <section class="reveal mt-14">
+      <p class="label">Updates</p>
+      <ol class="mt-5 space-y-6 border-l-2 border-line pl-6">
+        {% for update in updates %}
+          <li class="relative">
+            <span class="absolute -left-[1.9rem] top-1.5 h-3 w-3 rounded-full border-2 border-paper bg-sage"></span>
+            <time class="text-xs font-bold uppercase tracking-wider text-muted">{{ update.date|date:"j F Y" }}</time>
+            {% if update.title %}<h3 class="mt-1 font-display text-lg font-bold">{{ update.title }}</h3>{% endif %}
+            <div class="prose prose-siphira prose-sm mt-2 max-w-none">{{ update.body|markdown }}</div>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% endif %}
+
+  {% if project.lessons %}
+    <section class="reveal mt-14 rounded-3xl bg-sand-soft/60 p-8">
+      <p class="label">Lessons learned</p>
+      <div class="prose prose-siphira mt-3 max-w-none">{{ project.lessons|markdown }}</div>
+    </section>
+  {% endif %}
+
+  <div class="mt-16 border-t border-line pt-8 text-center">
+    <p class="text-muted">Want to talk about this project?</p>
+    <a href="/contact/" class="btn-primary mt-4">Get in touch</a>
+  </div>
+
+</article>
+{% endblock %}

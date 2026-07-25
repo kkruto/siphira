@@ -1,0 +1,54 @@
+{% extends "studio/base.html" %}
+
+{% block title %}Inbox{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <h1 class="font-display text-3xl font-extrabold">Inbox</h1>
+  <p class="mt-1 text-sm text-muted">Messages sent through the contact form.</p>
+</header>
+
+<div class="mb-6 flex gap-2 text-xs">
+  <a href="?box=inbox" class="rounded-full px-3 py-1.5 font-semibold {% if box == 'inbox' %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">Inbox {{ counts.inbox }}</a>
+  <a href="?box=archived" class="rounded-full px-3 py-1.5 font-semibold {% if box == 'archived' %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">Archived {{ counts.archived }}</a>
+  <a href="?box=spam" class="rounded-full px-3 py-1.5 font-semibold {% if box == 'spam' %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">Spam {{ counts.spam }}</a>
+</div>
+
+{% if messages_list %}
+  <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+    {% for msg in messages_list %}
+      <li class="flex items-start gap-4 p-4 transition-colors hover:bg-paper {% if not msg.is_read %}bg-sage/5{% endif %}">
+        <a href="{% url 'studio_inbox_detail' msg.pk %}" class="group min-w-0 flex-1">
+          <div class="flex flex-wrap items-baseline gap-2">
+            {% if not msg.is_read %}<span class="h-2 w-2 flex-shrink-0 rounded-full bg-sage" title="Unread"></span>{% endif %}
+            <span class="font-semibold transition-colors group-hover:text-sage-deep">{{ msg.name }}</span>
+            <span class="text-xs text-muted">{{ msg.email }}</span>
+            <span class="ml-auto flex-shrink-0 text-xs text-muted">{{ msg.created_at|date:"j M Y, H:i" }}</span>
+          </div>
+          {% if msg.subject %}<div class="mt-1 text-sm font-semibold">{{ msg.subject }}</div>{% endif %}
+          <p class="mt-1 line-clamp-2 text-sm text-muted">{{ msg.message }}</p>
+        </a>
+
+        <form method="post" action="{% url 'studio_inbox_action' msg.pk %}" class="flex flex-shrink-0 flex-col gap-1">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          {% if box == 'spam' %}
+            <button name="action" value="not_spam" class="pill bg-sand-soft text-ink transition-colors hover:bg-sand">Not spam</button>
+          {% elif box == 'archived' %}
+            <button name="action" value="unarchive" class="pill bg-sand-soft text-ink transition-colors hover:bg-sand">Restore</button>
+          {% else %}
+            <button name="action" value="archive" class="pill bg-sand-soft text-ink transition-colors hover:bg-sand">Archive</button>
+            <button name="action" value="spam" class="pill text-muted transition-colors hover:text-ink">Spam</button>
+          {% endif %}
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card text-center">
+    <p class="text-muted">
+      {% if box == 'spam' %}No spam.{% elif box == 'archived' %}Nothing archived.{% else %}No messages yet.{% endif %}
+    </p>
+  </div>
+{% endif %}
+{% endblock %}

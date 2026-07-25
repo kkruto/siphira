@@ -1,0 +1,45 @@
+{% extends "studio/base.html" %}
+
+{% block title %}{{ msg.subject|default:"Message" }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'studio_inbox' %}" class="link-underline text-sm font-semibold">&larr; Back to inbox</a>
+
+<article class="card mt-6 !rounded-3xl !p-8">
+  <header class="border-b border-line pb-5">
+    <h1 class="font-display text-2xl font-extrabold">{{ msg.subject|default:"(no subject)" }}</h1>
+    <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      <span class="font-semibold">{{ msg.name }}</span>
+      <a href="mailto:{{ msg.email }}" class="link-underline">{{ msg.email }}</a>
+      <span class="text-xs text-muted">{{ msg.created_at|date:"j F Y, H:i" }}</span>
+    </div>
+    {% if msg.is_spam %}
+      <p class="mt-3 pill bg-sand text-ink">Flagged as spam</p>
+    {% endif %}
+  </header>
+
+  <div class="mt-6 whitespace-pre-line leading-relaxed">{{ msg.message }}</div>
+
+  <footer class="mt-8 flex flex-wrap gap-2 border-t border-line pt-6">
+    <a href="mailto:{{ msg.email }}?subject=Re: {{ msg.subject|urlencode }}" class="btn-primary !py-2 text-xs">Reply by email</a>
+
+    <form method="post" action="{% url 'studio_inbox_action' msg.pk %}" class="flex flex-wrap gap-2">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'studio_inbox' %}">
+      {% if msg.is_archived %}
+        <button name="action" value="unarchive" class="btn-ghost !py-2 text-xs">Restore</button>
+      {% else %}
+        <button name="action" value="archive" class="btn-ghost !py-2 text-xs">Archive</button>
+      {% endif %}
+      <button name="action" value="unread" class="btn-ghost !py-2 text-xs">Mark unread</button>
+      {% if msg.is_spam %}
+        <button name="action" value="not_spam" class="btn-ghost !py-2 text-xs">Not spam</button>
+      {% else %}
+        <button name="action" value="spam" class="btn-ghost !py-2 text-xs">Mark spam</button>
+      {% endif %}
+      <button name="action" value="delete" class="btn-ghost !py-2 text-xs !text-red-700 hover:!border-red-700"
+              onclick="return confirm('Delete this message permanently? This cannot be undone.')">Delete</button>
+    </form>
+  </footer>
+</article>
+{% endblock %}

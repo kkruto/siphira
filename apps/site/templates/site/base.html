@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ site.hero_name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ site.hero_tagline }}{% endblock %}">
+  <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+
+  <meta property="og:site_name" content="{{ site.hero_name }}">
+  <meta property="og:title" content="{% block og_title %}{{ site.hero_name }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ site.hero_tagline }}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}/og/home.png{% endblock %}">
+  <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'img/siphira-sm.jpg' %}">
+  <link rel="alternate" type="application/rss+xml" title="{{ site.hero_name }} — writing" href="/feed/">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'dist/site.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="flex min-h-full flex-col bg-paper text-ink">
+
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-sage focus:px-5 focus:py-3 focus:text-sm focus:font-semibold focus:text-white">Skip to content</a>
+
+<header class="sticky top-0 z-50 border-b border-line/70 bg-paper/85 backdrop-blur-md">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <a href="/" class="group flex items-center gap-3">
+      <img src="{{ site.portrait_url }}" alt="" aria-hidden="true"
+           class="h-9 w-9 rounded-full object-cover ring-2 ring-sand transition-all duration-300 group-hover:ring-sage">
+      <span class="font-display text-lg font-extrabold tracking-tight">Siphira</span>
+    </a>
+
+    <div class="hidden items-center gap-7 md:flex">
+      {% for url, label in nav_links %}
+        <a href="{{ url }}" class="text-sm font-semibold transition-colors {% if request.path == url %}text-sage-deep{% else %}text-muted hover:text-ink{% endif %}">{{ label }}</a>
+      {% endfor %}
+      <a href="/contact/" class="btn-primary !px-5 !py-2 text-xs">Say hello</a>
+    </div>
+
+    <button id="menu-open" class="rounded-full p-2 text-ink transition-colors hover:bg-sand/40 md:hidden" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </nav>
+</header>
+
+<div id="mobile-menu" class="fixed inset-0 z-[55] hidden bg-paper md:hidden">
+  <div class="flex h-full flex-col items-center justify-center gap-7">
+    <button id="menu-close" class="absolute right-5 top-5 rounded-full p-2 text-muted transition-colors hover:bg-sand/40 hover:text-ink" aria-label="Close menu">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18 18 6M6 6l12 12"/></svg>
+    </button>
+    {% for url, label in nav_links %}
+      <a href="{{ url }}" class="font-display text-2xl font-bold text-ink transition-colors hover:text-sage-deep">{{ label }}</a>
+    {% endfor %}
+    <a href="/contact/" class="btn-primary mt-2">Say hello</a>
+  </div>
+</div>
+
+<main id="main" class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="mt-24 border-t border-line bg-sand-soft/40">
+  <div class="mx-auto max-w-5xl px-6 py-12">
+    <div class="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+      <div class="max-w-sm">
+        <div class="font-display text-lg font-extrabold">{{ site.hero_name }}</div>
+        <p class="mt-2 text-sm leading-relaxed text-muted">{{ site.hero_tagline }}</p>
+      </div>
+
+      <div class="flex gap-12">
+        <div>
+          <div class="label mb-3">Explore</div>
+          <ul class="space-y-2 text-sm">
+            {% for url, label in nav_links %}
+              <li><a href="{{ url }}" class="text-muted transition-colors hover:text-sage-deep">{{ label }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div>
+          <div class="label mb-3">Elsewhere</div>
+          <ul class="space-y-2 text-sm">
+            <li><a href="mailto:{{ site.email }}" class="text-muted transition-colors hover:text-sage-deep">Email</a></li>
+            {% if site.linkedin_url %}<li><a href="{{ site.linkedin_url }}" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-sage-deep">LinkedIn</a></li>{% endif %}
+            {% if site.twitter_url %}<li><a href="{{ site.twitter_url }}" target="_blank" rel="noopener" class="text-muted transition-colors hover:text-sage-deep">X</a></li>{% endif %}
+            <li><a href="/feed/" class="text-muted transition-colors hover:text-sage-deep">RSS</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-xs text-muted sm:flex-row">
+      <span>&copy; {% now "Y" %} {{ site.hero_name }}. {{ site.location }}.</span>
+      <a href="/privacy/" class="transition-colors hover:text-sage-deep">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Mobile menu
+  (function () {
+    var open = document.getElementById('menu-open');
+    var close = document.getElementById('menu-close');
+    var menu = document.getElementById('mobile-menu');
+    if (!open || !menu) return;
+    function show() { menu.classList.remove('hidden'); document.body.style.overflow = 'hidden'; open.setAttribute('aria-expanded', 'true'); }
+    function hide() { menu.classList.add('hidden'); document.body.style.overflow = ''; open.setAttribute('aria-expanded', 'false'); }
+    open.addEventListener('click', show);
+    close.addEventListener('click', hide);
+    menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', hide); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+  })();
+
+  // Scroll reveal. If IntersectionObserver is missing, everything is shown at
+  // once rather than left invisible — a broken animation must never hide content.
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add('is-in'); io.unobserve(entry.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

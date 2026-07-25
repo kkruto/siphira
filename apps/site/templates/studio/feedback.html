@@ -1,0 +1,65 @@
+{% extends "studio/base.html" %}
+{% load site_extras %}
+
+{% block title %}Feedback{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <h1 class="font-display text-3xl font-extrabold">Feedback</h1>
+  <p class="mt-1 text-sm text-muted">From the "was this useful?" buttons on your posts.</p>
+</header>
+
+<div class="mb-8 grid gap-3 sm:grid-cols-3">
+  <div class="card">
+    <div class="label !text-[10px]">Helpful</div>
+    <div class="mt-2 font-display text-3xl font-extrabold text-sage-deep">{{ up }}</div>
+  </div>
+  <div class="card">
+    <div class="label !text-[10px]">Not helpful</div>
+    <div class="mt-2 font-display text-3xl font-extrabold">{{ down }}</div>
+  </div>
+  <div class="card">
+    <div class="label !text-[10px]">Positive rate</div>
+    <div class="mt-2 font-display text-3xl font-extrabold">{{ up|pct:total }}%</div>
+  </div>
+</div>
+
+{% if by_page %}
+  <section class="card mb-6">
+    <h2 class="font-display text-lg font-bold">By page</h2>
+    <ul class="mt-4 space-y-2">
+      {% for row in by_page %}
+        <li class="flex items-center gap-3 text-sm">
+          <a href="{{ row.path }}" class="min-w-0 flex-1 truncate font-mono text-xs transition-colors hover:text-sage-deep">{{ row.path }}</a>
+          <div class="h-1.5 w-24 flex-shrink-0 overflow-hidden rounded-full bg-sand-soft">
+            <div class="h-full rounded-full bg-sage" style="width: {{ row.helpful|pct:row.n }}%"></div>
+          </div>
+          <span class="w-20 flex-shrink-0 text-right font-mono text-xs text-muted">{{ row.helpful }}/{{ row.n }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+<section>
+  <h2 class="mb-4 font-display text-lg font-bold">Recent responses</h2>
+  {% if items %}
+    <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+      {% for item in items %}
+        <li class="flex items-start gap-4 p-4">
+          <span class="pill flex-shrink-0 {% if item.sentiment == 'up' %}bg-sage/15 text-sage-deep{% else %}bg-sand text-ink{% endif %}">
+            {{ item.get_sentiment_display }}
+          </span>
+          <div class="min-w-0 flex-1">
+            <a href="{{ item.path }}" class="font-mono text-xs transition-colors hover:text-sage-deep">{{ item.path }}</a>
+            {% if item.note %}<p class="mt-1.5 leading-relaxed">{{ item.note }}</p>{% endif %}
+          </div>
+          <span class="flex-shrink-0 text-xs text-muted">{{ item.created_at|date:"j M" }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card text-center"><p class="text-muted">No feedback yet.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

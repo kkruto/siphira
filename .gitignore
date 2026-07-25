@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# Django
+db.sqlite3
+db.sqlite3-*
+staticfiles/
+media/
+logs/
+og_cache/
+*.log
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Node / build output
+node_modules/
+static/dist/
+*.tgz
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Source assets superseded by the processed versions in static/
+WhatsApp Image*.jpeg

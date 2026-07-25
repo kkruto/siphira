@@ -1,0 +1,39 @@
+{% extends "site/base.html" %}
+
+{% block title %}CV — {{ site.hero_name }}{% endblock %}
+{% block description %}Siphira John's curriculum vitae.{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl px-6 py-16">
+
+  <header class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="label">CV</p>
+      <h1 class="mt-3 font-display text-4xl font-extrabold leading-tight sm:text-5xl">Curriculum vitae</h1>
+      <p class="mt-3 text-muted">Merchandiser &amp; field sales professional · {{ site.location }}</p>
+    </div>
+    <a href="{{ site.cv_url }}" download class="btn-primary">Download PDF</a>
+  </header>
+
+  <div class="overflow-hidden rounded-3xl border border-line bg-white shadow-soft">
+    <!-- Inline preview. Mobile browsers routinely refuse to render PDFs in an
+         iframe, so the download button above is the reliable path, and the
+         fallback message inside covers the rest. -->
+    <object data="{{ site.cv_url }}" type="application/pdf" class="h-[80vh] w-full">
+      <div class="p-10 text-center">
+        <p class="text-muted">Your browser can't display the PDF inline.</p>
+        <a href="{{ site.cv_url }}" download class="btn-primary mt-4">Download the CV</a>
+      </div>
+    </object>
+  </div>
+
+  <div class="mt-8 text-center">
+    <p class="text-muted">Want the short version?</p>
+    <div class="mt-4 flex flex-wrap justify-center gap-3">
+      <a href="/skills/" class="btn-ghost">See my skills</a>
+      <a href="/contact/" class="btn-primary">Get in touch</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

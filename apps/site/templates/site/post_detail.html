@@ -1,0 +1,233 @@
+{% extends "site/base.html" %}
+{% load site_extras %}
+
+{% block title %}{{ post.title }} — {{ site.hero_name }}{% endblock %}
+{% block description %}{{ post.summary }}{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.summary }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{{ post.get_absolute_url }}og.png{% endblock %}
+{% block robots %}{% if is_preview %}noindex, nofollow{% else %}index, follow{% endif %}{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{{ post.title|escapejs }}",
+  "description": "{{ post.summary|escapejs }}",
+  "datePublished": "{{ post.published_at|date:'c' }}",
+  "dateModified": "{{ post.updated_at|date:'c' }}",
+  "author": {"@type": "Person", "name": "{{ site.hero_name }}"}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<article class="mx-auto max-w-3xl px-6 py-16">
+
+  {% if is_preview %}
+    <div class="mb-8 rounded-2xl border-2 border-dashed border-sand bg-sand-soft/60 p-4 text-center text-sm font-semibold">
+      Draft preview — this post is not published yet. Only you can see this.
+    </div>
+  {% endif %}
+
+  <a href="/blog/" class="link-underline text-sm font-semibold">&larr; All writing</a>
+
+  <header class="mt-6">
+    <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
+      {% if post.category %}<a href="/blog/?category={{ post.category.slug }}" class="pill bg-sand-soft text-ink transition-colors hover:bg-sand">{{ post.category.name }}</a>{% endif %}
+      <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"j F Y" }}</time>
+      <span aria-hidden="true">·</span>
+      <span>{{ post.read_time }} min read</span>
+    </div>
+
+    <h1 class="mt-4 font-display text-4xl font-extrabold leading-[1.15] sm:text-5xl">{{ post.title }}</h1>
+    <p class="mt-5 text-lg leading-relaxed text-muted">{{ post.summary }}</p>
+  </header>
+
+  {% if post.cover %}
+    <img src="{{ post.cover.url }}" alt="{{ post.cover_alt }}"
+         class="mt-10 w-full rounded-2xl object-cover shadow-soft">
+  {% endif %}
+
+  <div class="prose prose-siphira prose-lg mt-10 max-w-none prose-headings:font-display prose-p:leading-loose prose-img:rounded-2xl">
+    {{ post.body|markdown }}
+  </div>
+
+  {% if post.tag_list %}
+    <div class="mt-10 flex flex-wrap gap-2 border-t border-line pt-6">
+      {% for tag in post.tag_list %}<span class="pill border border-line text-muted">{{ tag }}</span>{% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- ── Feedback ─────────────────────────────────────────────────────── -->
+  {% if site.feedback_enabled and not is_preview %}
+    <section id="feedback" class="mt-12 rounded-2xl bg-sand-soft/60 p-6 text-center">
+      <div id="fb-ask">
+        <p class="font-semibold">Was this useful?</p>
+        <div class="mt-4 flex justify-center gap-3">
+          <button type="button" data-sentiment="up" class="fb-btn btn-ghost !py-2 text-xs">Yes, helpful</button>
+          <button type="button" data-sentiment="down" class="fb-btn btn-ghost !py-2 text-xs">Not really</button>
+        </div>
+      </div>
+      <p id="fb-thanks" class="hidden font-semibold text-sage-deep">Thank you — that's noted.</p>
+    </section>
+  {% endif %}
+
+  <!-- ── Comments ─────────────────────────────────────────────────────── -->
+  {% if site.comments_enabled and not is_preview %}
+    <section id="comments" class="mt-16 border-t border-line pt-10">
+      <h2 class="font-display text-2xl font-extrabold">
+        {{ comment_count }} comment{{ comment_count|pluralize }}
+      </h2>
+
+      {% if comments %}
+        <ol class="mt-8 space-y-6">
+          {% for comment in comments %}
+            <li class="flex gap-4">
+              <span aria-hidden="true" class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sand font-display font-bold text-ink">{{ comment.initial }}</span>
+              <div class="min-w-0 flex-1 rounded-2xl bg-white p-4 shadow-soft">
+                <div class="flex flex-wrap items-baseline gap-2">
+                  <span class="font-semibold">{{ comment.name }}</span>
+                  <time class="text-xs text-muted" datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"j M Y" }}</time>
+                </div>
+                <p class="mt-2 whitespace-pre-line leading-relaxed text-ink">{{ comment.body }}</p>
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="mt-4 text-muted">No comments yet. Be the first.</p>
+      {% endif %}
+
+      <form id="comment-form" class="mt-10 card !rounded-3xl" novalidate>
+        {% csrf_token %}
+        <h3 class="font-display text-lg font-bold">Leave a comment</h3>
+        <p class="mt-1 text-sm text-muted">
+          Your email is never published — it's only so Siphira can reply.
+          Comments appear after she approves them.
+        </p>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="c-name" class="label !text-[10px]">Name</label>
+            <input type="text" id="c-name" name="name" required maxlength="100"
+                   class="mt-1 w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm focus:border-sage focus:outline-none">
+          </div>
+          <div>
+            <label for="c-email" class="label !text-[10px]">Email</label>
+            <input type="email" id="c-email" name="email" required maxlength="254"
+                   class="mt-1 w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm focus:border-sage focus:outline-none">
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label for="c-body" class="label !text-[10px]">Comment</label>
+          <textarea id="c-body" name="body" rows="4" required maxlength="3000"
+                    class="mt-1 w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm focus:border-sage focus:outline-none"></textarea>
+        </div>
+
+        <!-- Honeypot: hidden from people, irresistible to bots. -->
+        <div class="absolute h-0 w-0 overflow-hidden" aria-hidden="true">
+          <label for="c-website">Website</label>
+          <input type="text" id="c-website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <p id="c-error" class="mt-4 hidden text-sm font-semibold text-red-700" role="alert"></p>
+        <p id="c-success" class="mt-4 hidden text-sm font-semibold text-sage-deep" role="status"></p>
+
+        <button type="submit" id="c-submit" class="btn-primary mt-5">Post comment</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if related %}
+    <section class="mt-16 border-t border-line pt-10">
+      <p class="label">Keep reading</p>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% for other in related %}
+          <a href="{{ other.get_absolute_url }}" class="card-hover group">
+            <h3 class="font-display font-bold transition-colors group-hover:text-sage-deep">{{ other.title }}</h3>
+            <p class="mt-1 line-clamp-2 text-sm text-muted">{{ other.summary }}</p>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function csrf() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+  }
+
+  // ── Feedback widget ──────────────────────────────────────────────────
+  var fbButtons = document.querySelectorAll('.fb-btn');
+  fbButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var data = new FormData();
+      data.append('sentiment', btn.dataset.sentiment);
+      data.append('path', window.location.pathname);
+      fetch('/feedback/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf() },
+        body: data
+      }).finally(function () {
+        // Thank the reader either way — a failed analytics write is not
+        // something they can act on, and a silent button feels broken.
+        var ask = document.getElementById('fb-ask');
+        var thanks = document.getElementById('fb-thanks');
+        if (ask) ask.classList.add('hidden');
+        if (thanks) thanks.classList.remove('hidden');
+      });
+    });
+  });
+
+  // ── Comment form ─────────────────────────────────────────────────────
+  var form = document.getElementById('comment-form');
+  if (!form) return;
+  var errorEl = document.getElementById('c-error');
+  var successEl = document.getElementById('c-success');
+  var submitEl = document.getElementById('c-submit');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+    submitEl.disabled = true;
+    submitEl.textContent = 'Posting…';
+
+    fetch(window.location.pathname + 'comment/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf() },
+      body: new FormData(form)
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (res.data.ok) {
+          form.reset();
+          successEl.textContent = res.data.message || 'Thanks! Your comment is awaiting approval.';
+          successEl.classList.remove('hidden');
+        } else {
+          errorEl.textContent = res.data.error || 'Something went wrong. Please try again.';
+          errorEl.classList.remove('hidden');
+        }
+      })
+      .catch(function () {
+        errorEl.textContent = 'Could not reach the server. Please try again.';
+        errorEl.classList.remove('hidden');
+      })
+      .finally(function () {
+        submitEl.disabled = false;
+        submitEl.textContent = 'Post comment';
+      });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "site/base.html" %}
+{% load static site_extras %}
+
+{% block title %}About — {{ site.hero_name }}{% endblock %}
+{% block description %}Siphira John on merchandising, healthcare, and building things that work for the people they serve.{% endblock %}
+{% block og_image %}{{ request.scheme }}://{{ request.get_host }}/og/about.png{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl px-6 py-16">
+
+  <header class="mb-14 max-w-prose">
+    <p class="label">About</p>
+    <h1 class="mt-3 font-display text-4xl font-extrabold leading-tight sm:text-5xl">
+      Curious about people, and what makes them trust.
+    </h1>
+  </header>
+
+  <div class="flex flex-col gap-14 lg:flex-row lg:gap-20">
+
+    <!-- Portrait column -->
+    <aside class="lg:w-64 lg:flex-shrink-0">
+      <div class="lg:sticky lg:top-28">
+        <img src="{% static 'img/siphira-alt.jpg' %}" alt="Portrait of {{ site.hero_name }}"
+             width="256" height="256"
+             class="w-full max-w-[16rem] rounded-3xl object-cover shadow-soft">
+
+        <dl class="mt-6 space-y-4 text-sm">
+          <div>
+            <dt class="label !text-[10px]">Based in</dt>
+            <dd class="mt-1 font-semibold">{{ site.location }}</dd>
+          </div>
+          <div>
+            <dt class="label !text-[10px]">Trained in</dt>
+            <dd class="mt-1 font-semibold">Orthopaedic &amp; trauma medicine, KMTC</dd>
+          </div>
+          <div>
+            <dt class="label !text-[10px]">Languages</dt>
+            <dd class="mt-1 font-semibold">English &amp; Swahili</dd>
+          </div>
+        </dl>
+
+        <div class="mt-7 flex flex-col gap-2">
+          <a href="/cv/" class="btn-ghost !py-2 text-xs">View CV</a>
+          <a href="/contact/" class="btn-primary !py-2 text-xs">Get in touch</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Narrative -->
+    <div class="min-w-0 flex-1">
+      <div class="prose prose-siphira prose-lg max-w-prose prose-p:leading-loose">
+        {{ site.about_body|markdown }}
+      </div>
+
+      {% if skill_groups %}
+      <div class="mt-16">
+        <p class="label">What I do</p>
+        <h2 class="mt-2 font-display text-2xl font-extrabold">Skills</h2>
+
+        <div class="mt-6 grid gap-4 sm:grid-cols-2">
+          {% for group in skill_groups %}
+            <div class="reveal card">
+              <h3 class="font-display text-base font-bold">{{ group.name }}</h3>
+              {% if group.description %}<p class="mt-1 text-sm text-muted">{{ group.description }}</p>{% endif %}
+              <ul class="mt-3 flex flex-wrap gap-1.5">
+                {% for skill in group.skills.all %}
+                  <li class="pill bg-sand-soft text-ink">{{ skill.name }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+        </div>
+
+        <a href="/skills/" class="link-underline mt-6 inline-block text-sm font-semibold">The full breakdown &rarr;</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

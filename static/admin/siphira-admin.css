@@ -1,0 +1,181 @@
+/* Siphira's palette applied over Django admin.
+   Django 5 admin is already CSS-variable driven, so re-theming is mostly a
+   matter of redefining its variables rather than fighting its selectors. */
+
+:root,
+html[data-theme="light"] {
+  --primary: #84A98C;
+  --secondary: #6B8E74;
+  --accent: #D6C6B8;
+
+  --header-bg: #1F2937;
+  --header-color: #FAFAF9;
+  --header-branding-color: #D6C6B8;
+  --header-link-color: #FAFAF9;
+
+  --breadcrumbs-bg: #84A98C;
+  --breadcrumbs-fg: #FAFAF9;
+  --breadcrumbs-link-fg: #FAFAF9;
+
+  --link-fg: #6B8E74;
+  --link-hover-color: #1F2937;
+  --link-selected-fg: #6B8E74;
+
+  --body-bg: #FAFAF9;
+  --body-fg: #1F2937;
+  --body-quiet-color: #6B7280;
+  --body-loud-color: #1F2937;
+
+  --button-bg: #84A98C;
+  --button-fg: #ffffff;
+  --button-hover-bg: #6B8E74;
+  --default-button-bg: #84A98C;
+  --default-button-hover-bg: #6B8E74;
+
+  --selected-bg: #EFE8E1;
+  --selected-row: #F5F1EC;
+  --border-color: #E7E2DC;
+  --hairline-color: #EFE8E1;
+
+  --message-success-bg: #EAF1EC;
+  --font-family-primary: Nunito, ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body { font-family: var(--font-family-primary); }
+
+#branding h1, #branding h1 a:link, #branding h1 a:visited {
+  color: #D6C6B8;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Rounded, softer surfaces to match the public site. */
+.module,
+#changelist,
+#content-related .module,
+.dashboard .module {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.module caption,
+.inline-group h2 {
+  background: #EFE8E1;
+  color: #1F2937;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 9px 18px;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.submit-row input.default { background: #84A98C; }
+.submit-row input.default:hover { background: #6B8E74; }
+
+.button.default:focus-visible,
+input[type=submit]:focus-visible,
+a.button:focus-visible {
+  outline: 2px solid #1F2937;
+  outline-offset: 2px;
+}
+
+input[type=text], input[type=email], input[type=url], input[type=password],
+input[type=number], textarea, select {
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  padding: 8px 11px;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #84A98C;
+  outline: 2px solid rgba(132, 169, 140, 0.35);
+  outline-offset: 0;
+}
+
+/* The body field is where the writing actually happens — give it room and a
+   comfortable reading measure rather than admin's default cramped box. */
+.field-body textarea,
+.field-about_body textarea,
+.field-problem textarea,
+.field-approach textarea,
+.field-progress textarea,
+.field-lessons textarea {
+  min-height: 340px;
+  line-height: 1.65;
+  font-size: 14px;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+/* Live Markdown preview panel injected by markdown-preview.js */
+.md-preview-wrap {
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.md-preview-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #EFE8E1;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1F2937;
+  cursor: pointer;
+  user-select: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+}
+.md-preview-body {
+  padding: 18px 22px;
+  max-height: 480px;
+  overflow-y: auto;
+  line-height: 1.7;
+  color: #1F2937;
+}
+.md-preview-body h1, .md-preview-body h2, .md-preview-body h3 {
+  font-weight: 800;
+  margin: 1.1em 0 0.4em;
+  line-height: 1.25;
+}
+.md-preview-body h1 { font-size: 1.6em; }
+.md-preview-body h2 { font-size: 1.3em; }
+.md-preview-body h3 { font-size: 1.1em; }
+.md-preview-body p { margin: 0 0 1em; }
+.md-preview-body ul, .md-preview-body ol { margin: 0 0 1em 1.4em; }
+.md-preview-body li { margin-bottom: 0.35em; }
+.md-preview-body blockquote {
+  border-left: 3px solid #84A98C;
+  margin: 0 0 1em;
+  padding-left: 1em;
+  color: #6B7280;
+}
+.md-preview-body code {
+  background: #F4F1EC;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.md-preview-body pre {
+  background: #F4F1EC;
+  padding: 14px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.md-preview-body pre code { background: none; padding: 0; }
+.md-preview-body a { color: #6B8E74; }
+.md-preview-body img { max-width: 100%; border-radius: 10px; }
+.md-preview-empty { color: #6B7280; font-style: italic; }

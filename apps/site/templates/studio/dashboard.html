@@ -1,0 +1,198 @@
+{% extends "studio/base.html" %}
+{% load site_extras %}
+
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<header class="mb-8 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="font-display text-3xl font-extrabold">Overview</h1>
+    <p class="mt-1 text-sm text-muted">Last {{ days }} days</p>
+  </div>
+  <div class="flex gap-1 text-xs">
+    <a href="?range=7"  class="rounded-full px-3 py-1.5 font-semibold {% if days == 7 %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">7d</a>
+    <a href="?range=30" class="rounded-full px-3 py-1.5 font-semibold {% if days == 30 %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">30d</a>
+    <a href="?range=90" class="rounded-full px-3 py-1.5 font-semibold {% if days == 90 %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">90d</a>
+  </div>
+</header>
+
+<!-- ── Needs attention ─────────────────────────────────────────────────── -->
+<div class="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <a href="{% url 'studio_inbox' %}" class="card-hover">
+    <div class="label !text-[10px]">Unread messages</div>
+    <div class="mt-2 font-display text-3xl font-extrabold {% if unread_messages %}text-sage-deep{% endif %}">{{ unread_messages }}</div>
+  </a>
+  <a href="{% url 'studio_comments' %}" class="card-hover">
+    <div class="label !text-[10px]">Comments to review</div>
+    <div class="mt-2 font-display text-3xl font-extrabold {% if pending_comments %}text-sage-deep{% endif %}">{{ pending_comments }}</div>
+  </a>
+  <a href="{% url 'studio_feedback' %}" class="card-hover">
+    <div class="label !text-[10px]">New feedback</div>
+    <div class="mt-2 font-display text-3xl font-extrabold {% if unread_feedback %}text-sage-deep{% endif %}">{{ unread_feedback }}</div>
+  </a>
+  <a href="{% url 'studio_posts' %}" class="card-hover">
+    <div class="label !text-[10px]">Drafts</div>
+    <div class="mt-2 font-display text-3xl font-extrabold">{{ draft_count }}</div>
+  </a>
+</div>
+
+<!-- ── Traffic ─────────────────────────────────────────────────────────── -->
+<section class="card !rounded-3xl !p-8">
+  <div class="flex flex-wrap items-end justify-between gap-6">
+    <div>
+      <div class="label !text-[10px]">Page views</div>
+      <div class="mt-1 flex items-baseline gap-3">
+        <span class="font-display text-4xl font-extrabold">{{ total_views }}</span>
+        {% if delta is not None %}
+          <span class="pill {% if delta >= 0 %}bg-sage/15 text-sage-deep{% else %}bg-sand text-ink{% endif %}">
+            {% if delta >= 0 %}&uarr;{% else %}&darr;{% endif %} {{ delta }}%
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="label !text-[10px]">Visitors</div>
+      <div class="mt-1 font-display text-4xl font-extrabold">{{ total_visitors }}</div>
+    </div>
+  </div>
+
+  <div class="mt-8 h-48">
+    <canvas id="traffic-chart" class="h-full w-full" role="img"
+            aria-label="Daily page views for the last {{ days }} days"></canvas>
+  </div>
+</section>
+
+<!-- ── Breakdown ───────────────────────────────────────────────────────── -->
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+
+  <section class="card">
+    <h2 class="font-display text-lg font-bold">Top posts</h2>
+    {% if top_posts %}
+      <ul class="mt-4 space-y-3">
+        {% for post in top_posts %}
+          <li class="flex items-center justify-between gap-4 text-sm">
+            <a href="{{ post.get_absolute_url }}" class="min-w-0 flex-1 truncate font-semibold transition-colors hover:text-sage-deep">{{ post.title }}</a>
+            <span class="flex-shrink-0 font-mono text-xs text-muted">{{ post.recent }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-3 text-sm text-muted">No post views in this window yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2 class="font-display text-lg font-bold">Where visitors came from</h2>
+    {% if top_referrers %}
+      <ul class="mt-4 space-y-3">
+        {% for ref in top_referrers %}
+          <li class="flex items-center justify-between gap-4 text-sm">
+            <span class="min-w-0 flex-1 truncate">{{ ref.referrer_host }}</span>
+            <span class="flex-shrink-0 font-mono text-xs text-muted">{{ ref.n }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-3 text-sm text-muted">
+        No external referrers yet — visitors are arriving directly.
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2 class="font-display text-lg font-bold">Latest messages</h2>
+    {% if latest_messages %}
+      <ul class="mt-4 space-y-3">
+        {% for msg in latest_messages %}
+          <li>
+            <a href="{% url 'studio_inbox_detail' msg.pk %}" class="group block text-sm">
+              <div class="flex items-center gap-2">
+                {% if not msg.is_read %}<span class="h-2 w-2 flex-shrink-0 rounded-full bg-sage"></span>{% endif %}
+                <span class="font-semibold transition-colors group-hover:text-sage-deep">{{ msg.name }}</span>
+                <span class="ml-auto flex-shrink-0 text-xs text-muted">{{ msg.created_at|date:"j M" }}</span>
+              </div>
+              <p class="mt-0.5 truncate text-muted">{{ msg.subject|default:msg.message }}</p>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-3 text-sm text-muted">No messages yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2 class="font-display text-lg font-bold">Comments awaiting review</h2>
+    {% if latest_comments %}
+      <ul class="mt-4 space-y-3">
+        {% for comment in latest_comments %}
+          <li class="text-sm">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold">{{ comment.name }}</span>
+              <span class="text-xs text-muted">on {{ comment.post.title|truncatechars:28 }}</span>
+            </div>
+            <p class="mt-0.5 truncate text-muted">{{ comment.body }}</p>
+            <form method="post" action="{% url 'studio_comment_action' comment.pk %}" class="mt-1.5 inline">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'studio' %}">
+              <button name="action" value="approve" class="pill bg-sage text-white transition-opacity hover:opacity-90">Approve</button>
+              <button name="action" value="spam" class="pill bg-sand-soft text-muted transition-colors hover:bg-sand">Spam</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mt-3 text-sm text-muted">Nothing waiting — you're all caught up.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Hand-drawn sparkline on a canvas. A charting library would be ~60KB for one
+// chart on a page only Siphira sees — not worth the weight or the CSP surface.
+(function () {
+  var data = {{ series_json|safe }};
+  var canvas = document.getElementById('traffic-chart');
+  if (!canvas || !data.length) return;
+
+  function draw() {
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    var max = Math.max.apply(null, data.map(function (d) { return d.views; })) || 1;
+    var pad = 4;
+    var barW = (w - pad * 2) / data.length;
+
+    data.forEach(function (d, i) {
+      var barH = (d.views / max) * (h - 24);
+      var x = pad + i * barW;
+      var y = h - barH - 16;
+      ctx.fillStyle = d.views ? '#84A98C' : '#E7E2DC';
+      var bw = Math.max(barW - 2, 1);
+      var r = Math.min(3, bw / 2, Math.max(barH, 1) / 2);
+      ctx.beginPath();
+      if (ctx.roundRect) { ctx.roundRect(x, y, bw, Math.max(barH, 2), [r, r, 0, 0]); }
+      else { ctx.rect(x, y, bw, Math.max(barH, 2)); }
+      ctx.fill();
+    });
+
+    // Only label the ends — anything denser is unreadable at this size.
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '10px Nunito, system-ui, sans-serif';
+    ctx.fillText(data[0].date.slice(5), pad, h - 2);
+    var lastLabel = data[data.length - 1].date.slice(5);
+    ctx.fillText(lastLabel, w - pad - ctx.measureText(lastLabel).width, h - 2);
+  }
+
+  draw();
+  window.addEventListener('resize', draw);
+})();
+</script>
+{% endblock %}

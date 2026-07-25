@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans;
+  }
+
+  ::selection {
+    background: #84A98C;
+    color: #FAFAF9;
+  }
+
+  /* Visible keyboard focus everywhere — the sage ring is part of the brand,
+     not an accessibility afterthought bolted on top of it. */
+  :focus-visible {
+    outline: 2px solid #84A98C;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display font-bold tracking-tight text-ink;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3
+           text-sm font-semibold transition-all duration-200;
+  }
+  .btn-primary {
+    @apply btn bg-sage text-white hover:bg-sage-deep hover:shadow-lift
+           active:translate-y-px;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-white/60 text-ink hover:border-sage
+           hover:text-sage-deep;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-white p-6 shadow-soft
+           transition-all duration-300;
+  }
+  .card-hover {
+    @apply card hover:-translate-y-1 hover:border-sage/60 hover:shadow-lift;
+  }
+
+  .pill {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+  }
+
+  .label {
+    @apply text-xs font-bold uppercase tracking-[0.14em] text-muted;
+  }
+
+  .link-underline {
+    @apply relative text-sage-deep after:absolute after:bottom-0 after:left-0
+           after:h-px after:w-0 after:bg-sage after:transition-all
+           after:duration-300 hover:after:w-full;
+  }
+}
+
+@layer utilities {
+  /* Scroll reveal. Elements start shifted and fade in when observed; if JS
+     never runs (or the observer is unsupported) `.reveal` is still visible
+     because the no-js fallback in base.html adds `is-in` to everything. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  .reveal.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Respect a stated preference for less motion — no transforms, no fades. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  .grain {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(214,198,184,0.30), transparent 42%),
+      radial-gradient(circle at 82% 8%, rgba(132,169,140,0.22), transparent 46%);
+  }
+}

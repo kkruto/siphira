@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}Studio{% endblock %} — Siphira</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'dist/site.css' %}">
+</head>
+<body class="flex min-h-full flex-col bg-paper text-ink">
+
+<header class="border-b border-line bg-white">
+  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+    <a href="{% url 'studio' %}" class="font-display text-lg font-extrabold">Studio</a>
+
+    {# `active` is set per-page so the highlight survives querystring filters
+       (e.g. /studio/inbox/?box=spam still highlights Inbox). #}
+    <nav class="flex flex-wrap items-center gap-1 text-sm">
+      <a href="{% url 'studio' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'dashboard' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Overview</a>
+      <a href="{% url 'studio_analytics' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'analytics' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Analytics</a>
+      <a href="{% url 'studio_posts' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'posts' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Posts</a>
+      <a href="{% url 'studio_inbox' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'inbox' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Inbox</a>
+      <a href="{% url 'studio_comments' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'comments' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Comments</a>
+      <a href="{% url 'studio_feedback' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'feedback' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Feedback</a>
+    </nav>
+
+    <div class="flex items-center gap-3 text-xs">
+      <a href="/" class="text-muted transition-colors hover:text-sage-deep">View site &rarr;</a>
+      <a href="/admin/" class="text-muted transition-colors hover:text-sage-deep">Admin</a>
+    </div>
+  </div>
+</header>
+
+<main class="flex-1">
+  <div class="mx-auto max-w-6xl px-6 py-10">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

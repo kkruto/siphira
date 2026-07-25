@@ -1,0 +1,57 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A second push while one deploy is mid-flight would race on the same box.
+  group: deploy-siphira
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Tailwind is built HERE, not on the droplet: that box is already running
+      # seven apps in 512MB and has no headroom for a node toolchain.
+      - name: Build CSS
+        run: |
+          npm ci
+          npm run build
+          test -s static/dist/site.css || { echo "site.css missing or empty"; exit 1; }
+          # Single tarball so the transfer path is unambiguous: archive root is
+          # "dist/", and deploy.sh extracts it into static/.
+          tar -czf siphira-dist.tgz -C static dist
+
+      - name: Ship assets to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: fluximpact
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "siphira-dist.tgz"
+          target: "/srv/siphira"
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          # Unprivileged app user, not root. It holds only the scoped sudo it
+          # needs; deploy.sh degrades gracefully if even that is absent.
+          username: fluximpact
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          # Update code first so the freshest deploy.sh is what runs.
+          script: |
+            cd /srv/siphira
+            git fetch --quiet origin main
+            git reset --hard --quiet origin/main
+            bash scripts/deploy.sh

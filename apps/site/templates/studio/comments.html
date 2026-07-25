@@ -1,0 +1,61 @@
+{% extends "studio/base.html" %}
+
+{% block title %}Comments{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <h1 class="font-display text-3xl font-extrabold">Comments</h1>
+  <p class="mt-1 text-sm text-muted">
+    Nothing appears on the blog until you approve it.
+  </p>
+</header>
+
+<div class="mb-6 flex gap-2 text-xs">
+  <a href="?state=pending" class="rounded-full px-3 py-1.5 font-semibold {% if state == 'pending' %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">Awaiting review {{ counts.pending }}</a>
+  <a href="?state=approved" class="rounded-full px-3 py-1.5 font-semibold {% if state == 'approved' %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">Published {{ counts.approved }}</a>
+  <a href="?state=spam" class="rounded-full px-3 py-1.5 font-semibold {% if state == 'spam' %}bg-sage text-white{% else %}bg-sand-soft text-ink hover:bg-sand{% endif %}">Spam {{ counts.spam }}</a>
+</div>
+
+{% if comments %}
+  <ul class="space-y-3">
+    {% for comment in comments %}
+      <li class="card">
+        <div class="flex flex-wrap items-baseline gap-2 text-sm">
+          <span class="font-semibold">{{ comment.name }}</span>
+          <span class="text-xs text-muted">{{ comment.email }}</span>
+          <span class="ml-auto text-xs text-muted">{{ comment.created_at|date:"j M Y, H:i" }}</span>
+        </div>
+
+        <p class="mt-1 text-xs text-muted">
+          on <a href="{{ comment.post.get_absolute_url }}" class="link-underline font-semibold">{{ comment.post.title }}</a>
+        </p>
+
+        <p class="mt-3 whitespace-pre-line leading-relaxed">{{ comment.body }}</p>
+
+        <form method="post" action="{% url 'studio_comment_action' comment.pk %}" class="mt-4 flex flex-wrap gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          {% if not comment.is_approved %}
+            <button name="action" value="approve" class="btn-primary !py-2 text-xs">Approve &amp; publish</button>
+          {% else %}
+            <button name="action" value="unapprove" class="btn-ghost !py-2 text-xs">Unpublish</button>
+          {% endif %}
+          {% if not comment.is_spam %}
+            <button name="action" value="spam" class="btn-ghost !py-2 text-xs">Mark spam</button>
+          {% endif %}
+          <button name="action" value="delete" class="btn-ghost !py-2 text-xs !text-red-700 hover:!border-red-700"
+                  onclick="return confirm('Delete this comment permanently? This cannot be undone.')">Delete</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card text-center">
+    <p class="text-muted">
+      {% if state == 'pending' %}Nothing waiting — you're all caught up.
+      {% elif state == 'spam' %}No spam.
+      {% else %}No published comments yet.{% endif %}
+    </p>
+  </div>
+{% endif %}
+{% endblock %}

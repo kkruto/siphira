@@ -1,0 +1,142 @@
+{% extends "site/base.html" %}
+
+{% block title %}Contact — {{ site.hero_name }}{% endblock %}
+{% block description %}Get in touch with Siphira John.{% endblock %}
+{% block og_image %}{{ request.scheme }}://{{ request.get_host }}/og/contact.png{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl px-6 py-16">
+
+  <header class="mb-12 max-w-prose">
+    <p class="label">Contact</p>
+    <h1 class="mt-3 font-display text-4xl font-extrabold leading-tight sm:text-5xl">Say hello</h1>
+    <p class="mt-4 text-lg leading-relaxed text-muted">
+      Whether it's a brand looking for representation, a collaboration, or just a conversation — my inbox is open.
+    </p>
+  </header>
+
+  <div class="grid gap-10 md:grid-cols-[1fr_1.4fr]">
+
+    <!-- Direct links -->
+    <aside class="space-y-3">
+      <a href="mailto:{{ site.email }}" class="card-hover group block">
+        <div class="label !text-[10px]">Email</div>
+        <div class="mt-1 break-all font-semibold transition-colors group-hover:text-sage-deep">{{ site.email }}</div>
+      </a>
+
+      {% if site.linkedin_url %}
+        <a href="{{ site.linkedin_url }}" target="_blank" rel="noopener" class="card-hover group block">
+          <div class="label !text-[10px]">LinkedIn</div>
+          <div class="mt-1 font-semibold transition-colors group-hover:text-sage-deep">Connect with me &rarr;</div>
+        </a>
+      {% endif %}
+
+      {% if site.twitter_url %}
+        <a href="{{ site.twitter_url }}" target="_blank" rel="noopener" class="card-hover group block">
+          <div class="label !text-[10px]">X</div>
+          <div class="mt-1 font-semibold transition-colors group-hover:text-sage-deep">Follow me &rarr;</div>
+        </a>
+      {% endif %}
+
+      <div class="card">
+        <div class="label !text-[10px]">Based in</div>
+        <div class="mt-1 font-semibold">{{ site.location }}</div>
+      </div>
+    </aside>
+
+    <!-- Form -->
+    <form id="contact-form" class="card !rounded-3xl !p-8" novalidate>
+      {% csrf_token %}
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="name" class="label !text-[10px]">Your name</label>
+          <input type="text" id="name" name="name" required maxlength="100"
+                 class="mt-1.5 w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm focus:border-sage focus:outline-none">
+        </div>
+        <div>
+          <label for="email" class="label !text-[10px]">Your email</label>
+          <input type="email" id="email" name="email" required maxlength="254"
+                 class="mt-1.5 w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm focus:border-sage focus:outline-none">
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label for="subject" class="label !text-[10px]">Subject <span class="font-normal normal-case tracking-normal">(optional)</span></label>
+        <input type="text" id="subject" name="subject" maxlength="200"
+               class="mt-1.5 w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm focus:border-sage focus:outline-none">
+      </div>
+
+      <div class="mt-4">
+        <label for="message" class="label !text-[10px]">Message</label>
+        <textarea id="message" name="message" rows="6" required maxlength="5000"
+                  class="mt-1.5 w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm focus:border-sage focus:outline-none"></textarea>
+      </div>
+
+      <!-- Honeypot -->
+      <div class="absolute h-0 w-0 overflow-hidden" aria-hidden="true">
+        <label for="website">Website</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+      </div>
+
+      <p id="form-error" class="mt-4 hidden text-sm font-semibold text-red-700" role="alert"></p>
+
+      <div id="form-success" class="mt-4 hidden rounded-2xl bg-sand-soft p-5 text-center" role="status">
+        <p class="font-display text-lg font-bold text-sage-deep">Message sent</p>
+        <p class="mt-1 text-sm text-muted">Thank you — Siphira will get back to you soon.</p>
+      </div>
+
+      <button type="submit" id="form-submit" class="btn-primary mt-6 w-full sm:w-auto">Send message</button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var form = document.getElementById('contact-form');
+  if (!form) return;
+  var errorEl = document.getElementById('form-error');
+  var successEl = document.getElementById('form-success');
+  var submitEl = document.getElementById('form-submit');
+  var token = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.classList.add('hidden');
+    submitEl.disabled = true;
+    submitEl.textContent = 'Sending…';
+
+    fetch('/contact/submit/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': token },
+      body: new FormData(form)
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (res.data.ok) {
+          // Swap the form out for the confirmation rather than leaving a
+          // filled-in form sitting there looking unsent.
+          form.querySelectorAll('input, textarea, button').forEach(function (el) { el.disabled = true; });
+          form.reset();
+          successEl.classList.remove('hidden');
+          submitEl.classList.add('hidden');
+        } else {
+          errorEl.textContent = res.data.error || 'Something went wrong. Please try again.';
+          errorEl.classList.remove('hidden');
+          submitEl.disabled = false;
+          submitEl.textContent = 'Send message';
+        }
+      })
+      .catch(function () {
+        errorEl.textContent = 'Could not reach the server. Please email ' + '{{ site.email }}' + ' directly.';
+        errorEl.classList.remove('hidden');
+        submitEl.disabled = false;
+        submitEl.textContent = 'Send message';
+      });
+  });
+})();
+</script>
+{% endblock %}

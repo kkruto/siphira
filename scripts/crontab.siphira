@@ -1,0 +1,14 @@
+# Scheduled jobs for siphira.fluximpact.org — REFERENCE ONLY.
+#
+# Do NOT install this with `crontab scripts/crontab.siphira`. That command
+# REPLACES the user's entire crontab, and this app runs as `fluximpact`, which
+# already owns the Flux Lab jobs (site_health, analytics rollups). Installing
+# this file wholesale would delete those and silently take down monitoring for
+# the main site.
+#
+# scripts/deploy.sh splices the job below into a marked block instead, leaving
+# every other line on the user's crontab untouched. This file exists so the
+# schedule is readable in version control.
+
+# Roll raw page views into daily totals and prune data past 90 days.
+15 0 * * * cd /srv/siphira && DJANGO_SETTINGS_MODULE=config.settings.production /srv/siphira/venv/bin/python manage.py rollup_analytics --days 3 >> /srv/siphira/logs/cron.log 2>&1

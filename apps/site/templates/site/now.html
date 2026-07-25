@@ -1,0 +1,47 @@
+{% extends "site/base.html" %}
+
+{% block title %}Now — {{ site.hero_name }}{% endblock %}
+{% block description %}{{ site.now_intro }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl px-6 py-16">
+
+  <header class="mb-12">
+    <p class="label">Now</p>
+    <h1 class="mt-3 font-display text-4xl font-extrabold leading-tight sm:text-5xl">What I'm focused on</h1>
+    <p class="mt-4 text-lg leading-relaxed text-muted">{{ site.now_intro }}</p>
+    {% if last_updated %}
+      <p class="mt-3 text-xs font-semibold text-muted">Last updated {{ last_updated.updated_at|date:"j F Y" }}</p>
+    {% endif %}
+  </header>
+
+  {% if grouped %}
+    <div class="space-y-8">
+      {% for group in grouped %}
+        <section class="reveal">
+          <h2 class="label">{{ group.label }}</h2>
+          <ul class="mt-3 space-y-3">
+            {% for entry in group.items %}
+              <li class="card flex items-start gap-4">
+                <span class="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-sage"></span>
+                <div>
+                  <div class="font-semibold">{{ entry.text }}</div>
+                  {% if entry.detail %}<div class="mt-1 text-sm leading-relaxed text-muted">{{ entry.detail }}</div>{% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card text-center"><p class="text-muted">Nothing here just yet.</p></div>
+  {% endif %}
+
+  <p class="mt-12 border-t border-line pt-6 text-sm text-muted">
+    This is a <a href="https://nownownow.com/about" target="_blank" rel="noopener" class="link-underline font-semibold">now page</a> —
+    a snapshot of what has my attention at the moment, updated as things change.
+  </p>
+
+</div>
+{% endblock %}

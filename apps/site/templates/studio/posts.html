@@ -1,0 +1,67 @@
+{% extends "studio/base.html" %}
+
+{% block title %}Posts{% endblock %}
+
+{% block content %}
+<header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="font-display text-3xl font-extrabold">Posts</h1>
+    <p class="mt-1 text-sm text-muted">Write and edit in admin; publish from here.</p>
+  </div>
+  <a href="/admin/site/post/add/" class="btn-primary !py-2 text-xs">Write a new post</a>
+</header>
+
+<section class="mb-10">
+  <h2 class="label mb-3">Drafts</h2>
+  {% if drafts %}
+    <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+      {% for post in drafts %}
+        <li class="flex flex-wrap items-center gap-3 p-4">
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold">{{ post.title }}</div>
+            <div class="mt-0.5 text-xs text-muted">
+              {% if post.category %}{{ post.category.name }} · {% endif %}{{ post.read_time }} min · edited {{ post.updated_at|date:"j M Y" }}
+            </div>
+          </div>
+          <a href="{% url 'preview_post' post.slug %}" class="btn-ghost !py-2 text-xs">Preview</a>
+          <a href="/admin/site/post/{{ post.pk }}/change/" class="btn-ghost !py-2 text-xs">Edit</a>
+          <form method="post" action="{% url 'studio_post_publish' post.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'studio_posts' %}">
+            <button class="btn-primary !py-2 text-xs">Publish</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card text-center"><p class="text-muted">No drafts.</p></div>
+  {% endif %}
+</section>
+
+<section>
+  <h2 class="label mb-3">Published</h2>
+  {% if published %}
+    <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+      {% for post in published %}
+        <li class="flex flex-wrap items-center gap-3 p-4">
+          <div class="min-w-0 flex-1">
+            <a href="{{ post.get_absolute_url }}" class="font-semibold transition-colors hover:text-sage-deep">{{ post.title }}</a>
+            <div class="mt-0.5 text-xs text-muted">
+              {{ post.published_at|date:"j M Y" }} · {{ post.view_count }} view{{ post.view_count|pluralize }}
+            </div>
+          </div>
+          <a href="/admin/site/post/{{ post.pk }}/change/" class="btn-ghost !py-2 text-xs">Edit</a>
+          <form method="post" action="{% url 'studio_post_publish' post.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'studio_posts' %}">
+            <button class="btn-ghost !py-2 text-xs"
+                    onclick="return confirm('Unpublish this post? It will disappear from the blog.')">Unpublish</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card text-center"><p class="text-muted">Nothing published yet.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,41 @@
+[Unit]
+Description=Siphira John — Gunicorn
+After=network.target
+
+[Service]
+# Runs as the same unprivileged user as the rest of the fleet so the existing
+# /_status/ console can see and restart it without new grants.
+User=fluximpact
+Group=fluximpact
+WorkingDirectory=/srv/siphira
+EnvironmentFile=/srv/siphira/.env
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+
+# One worker: this is a personal site on a 512MB box already running 7 apps.
+# --preload shares the parsed app across the (single) worker and cuts RSS.
+ExecStart=/srv/siphira/venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8007 \
+    --workers 1 \
+    --threads 4 \
+    --preload \
+    --timeout 60 \
+    --access-logfile /var/log/siphira/access.log \
+    --error-logfile /var/log/siphira/error.log
+
+ExecReload=/bin/kill -s HUP $MAINPID
+
+LogsDirectory=siphira
+LogsDirectoryMode=0755
+
+Restart=on-failure
+RestartSec=5
+
+# Basic hardening — this process needs nothing outside its own directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/srv/siphira
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,47 @@
+{% extends "site/base.html" %}
+
+{% block title %}Skills — {{ site.hero_name }}{% endblock %}
+{% block description %}Merchandising, sales and promotion, operations, and interpersonal skills.{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl px-6 py-16">
+
+  <header class="mb-12 max-w-prose">
+    <p class="label">Skills</p>
+    <h1 class="mt-3 font-display text-4xl font-extrabold leading-tight sm:text-5xl">What I bring</h1>
+    <p class="mt-4 text-lg leading-relaxed text-muted">
+      Built across beauty, skincare, and haircare brand representation in Nairobi and Kiambu county —
+      and sharpened in two county referral hospitals.
+    </p>
+  </header>
+
+  <div class="space-y-5">
+    {% for group in skill_groups %}
+      <section class="reveal card !rounded-3xl !p-8">
+        <div class="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 class="font-display text-xl font-extrabold">{{ group.name }}</h2>
+          <span class="text-xs font-semibold text-muted">{{ group.skills.count }} skill{{ group.skills.count|pluralize }}</span>
+        </div>
+        {% if group.description %}<p class="mt-1.5 text-muted">{{ group.description }}</p>{% endif %}
+
+        <ul class="mt-5 flex flex-wrap gap-2">
+          {% for skill in group.skills.all %}
+            <li class="pill bg-sand-soft text-ink transition-colors hover:bg-sand">{{ skill.name }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% empty %}
+      <div class="card text-center"><p class="text-muted">Skills coming soon.</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="reveal mt-12 rounded-3xl border border-sand bg-white p-8 text-center shadow-soft">
+    <p class="text-muted">The full history is in my CV.</p>
+    <div class="mt-5 flex flex-wrap justify-center gap-3">
+      <a href="/cv/" class="btn-primary">View CV</a>
+      <a href="/contact/" class="btn-ghost">Work with me</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

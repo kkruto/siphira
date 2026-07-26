@@ -13,6 +13,9 @@ APP_DIR="/srv/siphira"
 REPO="https://github.com/kkruto/siphira.git"
 DOMAIN="siphira.fluximpact.org"
 PORT=8007
+# Let's Encrypt expiry notices go here. Ken's address, not Siphira's — she is
+# not the one who fixes a failed renewal at 2am.
+CERT_EMAIL="kkimtai@gmail.com"
 
 if [ "$EUID" -ne 0 ]; then
     echo "Run as root: sudo bash $0" >&2
@@ -44,6 +47,10 @@ else
 fi
 mkdir -p "$APP_DIR"/{logs,media,og_cache,static/dist}
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+# nginx (www-data) serves /media/ via alias, so it must be able to traverse
+# into the app directory. Note this is why the app lives under /srv and not in
+# /home/fluximpact, which is mode 750 and blocks www-data entirely.
+chmod 755 "$APP_DIR" "$APP_DIR/media"
 
 echo "==> [4/8] Virtualenv"
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
@@ -102,48 +109,60 @@ if [ "$(systemctl is-active siphira)" != "active" ]; then
 fi
 echo "    siphira.service active on :$PORT"
 
-echo "==> [8/8] nginx"
-# Verify the shared certificate actually covers this hostname BEFORE enabling
-# the site — a vhost referencing a cert without this SAN will serve a browser
-# warning on every visit.
-CERT=/etc/letsencrypt/live/fluximpact.org/fullchain.pem
-COVERED=no
-if [ -f "$CERT" ]; then
-    SANS=$(openssl x509 -in "$CERT" -noout -text | grep -A1 "Subject Alternative Name" | tail -1)
-    if echo "$SANS" | grep -qE "DNS:\*\.fluximpact\.org|DNS:$DOMAIN"; then
-        COVERED=yes
+echo "==> [8/9] nginx (HTTP) + TLS certificate"
+# This host gets its OWN certificate rather than being added to the shared
+# fluximpact.org SAN cert. `certbot --expand` would rewrite the certificate
+# that 11 other names depend on; a separate cert is the same outcome with no
+# blast radius, and it renews on its own schedule.
+CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
+
+if [ -d "$CERT_DIR" ]; then
+    echo "    certificate for $DOMAIN already exists — reusing"
+else
+    # Ordering matters: the TLS vhost references a cert that does not exist
+    # yet, and `nginx -t` fails hard on a missing certificate file. So serve
+    # HTTP first, get the cert, then swap.
+    echo "    installing temporary HTTP vhost for the ACME challenge"
+    mkdir -p /var/www/certbot
+    cp "$APP_DIR/scripts/nginx-siphira-http.conf" /etc/nginx/sites-available/siphira
+    ln -sf /etc/nginx/sites-available/siphira /etc/nginx/sites-enabled/siphira
+    if ! nginx -t 2>/dev/null; then
+        echo "  ERROR: nginx rejected the temporary HTTP vhost:" >&2
+        nginx -t >&2
+        rm -f /etc/nginx/sites-enabled/siphira
+        exit 1
+    fi
+    systemctl reload nginx
+
+    echo "    requesting certificate for $DOMAIN (webroot ACME)"
+    if ! certbot certonly --webroot -w /var/www/certbot \
+            -d "$DOMAIN" \
+            --non-interactive --agree-tos \
+            --email "$CERT_EMAIL" \
+            --cert-name "$DOMAIN"; then
+        echo "" >&2
+        echo "  ERROR: certificate issuance failed. The site is NOT enabled." >&2
+        echo "         The temporary HTTP vhost has been removed so nothing" >&2
+        echo "         serves this host unencrypted." >&2
+        echo "         Check DNS resolves to this box and port 80 is reachable." >&2
+        rm -f /etc/nginx/sites-enabled/siphira
+        nginx -t >/dev/null 2>&1 && systemctl reload nginx
+        exit 1
     fi
 fi
 
+echo "==> [9/9] nginx (TLS)"
 cp "$APP_DIR/scripts/nginx-siphira.conf" /etc/nginx/sites-available/siphira
 ln -sf /etc/nginx/sites-available/siphira /etc/nginx/sites-enabled/siphira
-
-if [ "$COVERED" = yes ]; then
-    if nginx -t 2>/dev/null; then
-        systemctl reload nginx
-        echo "    nginx reloaded — cert already covers $DOMAIN"
-    else
-        echo "  ERROR: nginx config test failed. Fix before reloading:" >&2
-        nginx -t >&2
-        exit 1
-    fi
+if nginx -t 2>/dev/null; then
+    systemctl reload nginx
+    echo "    nginx reloaded — $DOMAIN served over TLS with its own certificate"
 else
-    # Don't silently expand a certificate that eight sites depend on.
+    echo "  ERROR: nginx config test failed — rolling back to no vhost:" >&2
+    nginx -t >&2
     rm -f /etc/nginx/sites-enabled/siphira
-    echo ""
-    echo "  !! The fluximpact.org certificate does NOT cover $DOMAIN, and there"
-    echo "     is no *.fluximpact.org wildcard. The vhost has been installed to"
-    echo "     sites-available but NOT enabled, because enabling it would serve"
-    echo "     a TLS warning to every visitor."
-    echo ""
-    echo "     Current SANs:"
-    echo "     $SANS"
-    echo ""
-    echo "     To issue a certificate for this host (this rewrites the shared"
-    echo "     cert — do it deliberately), run:"
-    echo "         sudo certbot --nginx -d $DOMAIN"
-    echo "         sudo ln -sf /etc/nginx/sites-available/siphira /etc/nginx/sites-enabled/siphira"
-    echo "         sudo nginx -t && sudo systemctl reload nginx"
+    systemctl reload nginx
+    exit 1
 fi
 
 echo ""

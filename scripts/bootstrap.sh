@@ -3,10 +3,15 @@
 # Run ONCE as root:  sudo bash bootstrap.sh
 #
 # Safe to re-run: every step is guarded. It deliberately does NOT touch any
-# other app on the box — no shared config is rewritten, no certificate is
-# renewed or expanded (see the TLS check at the end, which reports rather than
-# acts, because expanding the cert rewrites what all eight sites share).
+# other app on the box — no shared config is rewritten, and this host gets its
+# OWN certificate rather than being added to the shared fluximpact.org SAN cert,
+# so nothing the other sites depend on is ever modified.
 set -euo pipefail
+
+# `set -e` aborts silently — you get your prompt back with no clue which line
+# died. That cost two debugging round-trips already (an unquoted SECRET_KEY,
+# then a SIGPIPE in the token generator), so always say where and why.
+trap 'rc=$?; echo "" >&2; echo "  ERROR: bootstrap failed at line $LINENO (exit $rc)." >&2; echo "         Re-running is safe — every step is guarded." >&2; exit $rc' ERR
 
 APP_USER="fluximpact"          # reuse the fleet user so /_status/ can see this app
 APP_DIR="/srv/siphira"
@@ -66,9 +71,18 @@ echo "==> [5/8] Environment file"
 # interprets as syntax; an unquoted key produces "syntax error near unexpected
 # token". We therefore generate from an alphanumeric alphabet AND quote it.
 # 64 alphanumeric characters is ~381 bits, well beyond Django's own default.
+# Generated with Python's `secrets`, NOT `tr < /dev/urandom | head -c N`.
+# That pipeline looks fine and is a silent trap under `set -euo pipefail`:
+# head exits once it has N bytes, closing the pipe, tr dies of SIGPIPE, and
+# pipefail surfaces exit 141 — so `set -e` aborts the whole script with no
+# error message at all. Using the venv interpreter (built in step 4) rather
+# than bare `python3` keeps this independent of what is on PATH.
 gen_token() {
-    local n="${1:-32}"
-    LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$n"
+    "$APP_DIR/venv/bin/python" -c \
+        "import secrets, string, sys
+n = int(sys.argv[1])
+print(''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(n)))" \
+        "${1:-32}"
 }
 
 if [ ! -f "$APP_DIR/.env" ]; then

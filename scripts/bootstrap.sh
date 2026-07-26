@@ -60,32 +60,54 @@ sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q --upgrade pip
 sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
 
 echo "==> [5/8] Environment file"
-if [ ! -f "$APP_DIR/.env" ]; then
-    SECRET=$(sudo -u "$APP_USER" "$APP_DIR/venv/bin/python" -c \
-        "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
-    SALT=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 32)
-    cat > "$APP_DIR/.env" <<EOF
-SECRET_KEY=$SECRET
-DEBUG=False
-SITE_DOMAIN=$DOMAIN
-ALLOWED_HOSTS=$DOMAIN,127.0.0.1,localhost
-ANALYTICS_SALT=$SALT
+# This file is consumed two ways — `source`d by shell scripts and parsed by
+# django-environ — so every value is single-quoted. Django's own
+# get_random_secret_key() draws from "!@#$%^&*(-_=+)", which the shell happily
+# interprets as syntax; an unquoted key produces "syntax error near unexpected
+# token". We therefore generate from an alphanumeric alphabet AND quote it.
+# 64 alphanumeric characters is ~381 bits, well beyond Django's own default.
+gen_token() {
+    local n="${1:-32}"
+    LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$n"
+}
 
-# Admin login. CHANGE ADMIN_PASSWORD, then re-run with ADMIN_PASSWORD_RESET=1
-# to apply it, or use: venv/bin/python manage.py changepassword siphira
-ADMIN_USERNAME=siphira
-ADMIN_EMAIL=siphirawanjiku0@gmail.com
-ADMIN_PASSWORD=$(head -c 18 /dev/urandom | base64 | tr -d '/+=' | head -c 20)
+if [ ! -f "$APP_DIR/.env" ]; then
+    SECRET=$(gen_token 64)
+    SALT=$(gen_token 32)
+    ADMIN_PW=$(gen_token 20)
+    cat > "$APP_DIR/.env" <<EOF
+SECRET_KEY='$SECRET'
+DEBUG='False'
+SITE_DOMAIN='$DOMAIN'
+ALLOWED_HOSTS='$DOMAIN,127.0.0.1,localhost'
+ANALYTICS_SALT='$SALT'
+
+# Admin login. To change: cd $APP_DIR && venv/bin/python manage.py changepassword siphira
+ADMIN_USERNAME='siphira'
+ADMIN_EMAIL='siphirawanjiku0@gmail.com'
+ADMIN_PASSWORD='$ADMIN_PW'
 
 # Keyless push alerts for new messages/comments. Subscribe to this topic in the
 # ntfy app. Leave blank to disable notifications entirely.
-NTFY_TOPIC=
+NTFY_TOPIC=''
 EOF
     chown "$APP_USER:$APP_USER" "$APP_DIR/.env"
     chmod 600 "$APP_DIR/.env"
-    echo "    wrote $APP_DIR/.env (admin password generated — see below)"
+    echo "    wrote $APP_DIR/.env"
 else
     echo "    .env already exists — left untouched"
+fi
+
+# Fail here rather than three steps later with a cryptic shell error. An .env
+# written by an older version of this script may hold unquoted values.
+if ! ( set -a; . "$APP_DIR/.env" ) >/dev/null 2>&1; then
+    echo "" >&2
+    echo "  ERROR: $APP_DIR/.env is not valid shell — most likely an unquoted" >&2
+    echo "         SECRET_KEY containing \$ & ( ) ! % characters." >&2
+    echo "" >&2
+    echo "         Fix by regenerating it:" >&2
+    echo "             sudo rm $APP_DIR/.env && sudo bash $0" >&2
+    exit 1
 fi
 
 echo "==> [6/8] Django setup"

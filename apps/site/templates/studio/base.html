@@ -18,8 +18,14 @@
   <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
     <a href="{% url 'studio' %}" class="font-display text-lg font-extrabold">Studio</a>
 
-    {# `active` is set per-page so the highlight survives querystring filters
-       (e.g. /studio/inbox/?box=spam still highlights Inbox). #}
+    {% comment %}
+      `active` is set per-page so the highlight survives querystring filters
+      (e.g. /studio/inbox/?box=spam still highlights Inbox).
+
+      Must be {% comment %}, not {# #}: Django's {# #} form is single-line only,
+      and a multi-line one is not parsed as a comment at all — it renders to the
+      page as literal text.
+    {% endcomment %}
     <nav class="flex flex-wrap items-center gap-1 text-sm">
       <a href="{% url 'studio' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'dashboard' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Overview</a>
       <a href="{% url 'studio_analytics' %}" class="rounded-full px-3 py-1.5 font-semibold transition-colors {% if active == 'analytics' %}bg-sage text-white{% else %}text-muted hover:bg-sand-soft hover:text-ink{% endif %}">Analytics</a>

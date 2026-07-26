@@ -27,20 +27,29 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "==> [1/8] Checking the port is free"
-if ss -ltnp 2>/dev/null | grep -q ":$PORT "; then
-    echo "  ERROR: port $PORT is already in use by another app. Pick a different" >&2
-    echo "         port in scripts/siphira.service AND scripts/nginx-siphira.conf." >&2
-    ss -ltnp | grep ":$PORT " >&2
-    exit 1
+echo "==> [1/9] Checking the port"
+# The point of this check is to avoid colliding with a SIBLING app, not to
+# insist on a clean slate. On any re-run — and this script is explicitly
+# designed to be re-run — our own gunicorn is already listening here, which is
+# success, not a conflict. Only a foreign occupant is a real error.
+if ss -ltn 2>/dev/null | grep -q ":$PORT "; then
+    if systemctl is-active --quiet siphira 2>/dev/null; then
+        echo "    :$PORT held by this app's own siphira.service (re-run) — continuing"
+    else
+        echo "  ERROR: port $PORT is in use, and it is NOT siphira. Pick a different" >&2
+        echo "         port in scripts/siphira.service AND scripts/nginx-siphira.conf." >&2
+        ss -ltnp 2>/dev/null | grep ":$PORT " >&2
+        exit 1
+    fi
+else
+    echo "    :$PORT is free"
 fi
-echo "    :$PORT is free"
 
-echo "==> [2/8] System packages"
+echo "==> [2/9] System packages"
 apt-get update -qq
 apt-get install -y -qq python3-venv python3-pip git curl >/dev/null
 
-echo "==> [3/8] Code at $APP_DIR"
+echo "==> [3/9] Code at $APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
     echo "    repo already present — pulling"
     sudo -u "$APP_USER" git -C "$APP_DIR" fetch --quiet origin main
@@ -57,14 +66,14 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 # /home/fluximpact, which is mode 750 and blocks www-data entirely.
 chmod 755 "$APP_DIR" "$APP_DIR/media"
 
-echo "==> [4/8] Virtualenv"
+echo "==> [4/9] Virtualenv"
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
     sudo -u "$APP_USER" python3 -m venv "$APP_DIR/venv"
 fi
 sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q --upgrade pip
 sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
 
-echo "==> [5/8] Environment file"
+echo "==> [5/9] Environment file"
 # This file is consumed two ways — `source`d by shell scripts and parsed by
 # django-environ — so every value is single-quoted. Django's own
 # get_random_secret_key() draws from "!@#$%^&*(-_=+)", which the shell happily
@@ -124,7 +133,7 @@ if ! ( set -a; . "$APP_DIR/.env" ) >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "==> [6/8] Django setup"
+echo "==> [6/9] Django setup"
 cd "$APP_DIR"
 sudo -u "$APP_USER" bash -c "set -a && source .env && set +a && \
     export DJANGO_SETTINGS_MODULE=config.settings.production && \
@@ -133,7 +142,7 @@ sudo -u "$APP_USER" bash -c "set -a && source .env && set +a && \
     venv/bin/python manage.py seed_data && \
     venv/bin/python manage.py create_admin"
 
-echo "==> [7/8] systemd unit"
+echo "==> [7/9] systemd unit"
 cp "$APP_DIR/scripts/siphira.service" /etc/systemd/system/siphira.service
 systemctl daemon-reload
 systemctl enable --now siphira

@@ -28,7 +28,10 @@ SECURE_HSTS_PRELOAD = False
 # static story — no nginx static block, no separate CDN.
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
-    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+    # Deliberately the resilient subclass, not whitenoise's stock manifest
+    # storage: a missing manifest entry should cost styling, not the whole
+    # site. See config/storage.py.
+    'staticfiles': {'BACKEND': 'config.storage.ResilientManifestStaticFilesStorage'},
 }
 WHITENOISE_MAX_AGE = 31536000
 

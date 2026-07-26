@@ -27,7 +27,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "==> [1/9] Checking the port"
+echo "==> [1/10] Checking the port"
 # The point of this check is to avoid colliding with a SIBLING app, not to
 # insist on a clean slate. On any re-run — and this script is explicitly
 # designed to be re-run — our own gunicorn is already listening here, which is
@@ -45,11 +45,11 @@ else
     echo "    :$PORT is free"
 fi
 
-echo "==> [2/9] System packages"
+echo "==> [2/10] System packages"
 apt-get update -qq
 apt-get install -y -qq python3-venv python3-pip git curl >/dev/null
 
-echo "==> [3/9] Code at $APP_DIR"
+echo "==> [3/10] Code at $APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
     echo "    repo already present — pulling"
     sudo -u "$APP_USER" git -C "$APP_DIR" fetch --quiet origin main
@@ -66,14 +66,14 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 # /home/fluximpact, which is mode 750 and blocks www-data entirely.
 chmod 755 "$APP_DIR" "$APP_DIR/media"
 
-echo "==> [4/9] Virtualenv"
+echo "==> [4/10] Virtualenv"
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
     sudo -u "$APP_USER" python3 -m venv "$APP_DIR/venv"
 fi
 sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q --upgrade pip
 sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
 
-echo "==> [5/9] Environment file"
+echo "==> [5/10] Environment file"
 # This file is consumed two ways — `source`d by shell scripts and parsed by
 # django-environ — so every value is single-quoted. Django's own
 # get_random_secret_key() draws from "!@#$%^&*(-_=+)", which the shell happily
@@ -133,7 +133,31 @@ if ! ( set -a; . "$APP_DIR/.env" ) >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "==> [6/9] Django setup"
+echo "==> [6/10] Front-end assets (Tailwind)"
+# static/dist/ is gitignored — the built CSS is a build artifact and never
+# ships in the repo. deploy.sh gets it from a CI tarball, but bootstrap runs
+# standalone on a fresh box and has to build it here. Without this,
+# collectstatic writes a manifest with no entry for dist/site.css and every
+# page 500s with "Missing staticfiles manifest entry".
+if [ -s "$APP_DIR/static/dist/site.css" ]; then
+    echo "    site.css already built ($(wc -c < "$APP_DIR/static/dist/site.css") bytes)"
+elif command -v npm >/dev/null 2>&1; then
+    echo "    building with npm (this takes a minute)"
+    sudo -u "$APP_USER" bash -c "cd '$APP_DIR' && npm ci --silent && npm run build" \
+        || { echo "  ERROR: Tailwind build failed. Check node/npm on this box." >&2; exit 1; }
+else
+    echo "  ERROR: no npm on this box and no prebuilt static/dist/site.css." >&2
+    echo "         Install node, or scp a built site.css into $APP_DIR/static/dist/." >&2
+    exit 1
+fi
+# Never proceed to collectstatic without it — failing here gives a clear cause,
+# whereas failing later gives a stack trace in a template tag.
+if [ ! -s "$APP_DIR/static/dist/site.css" ]; then
+    echo "  ERROR: static/dist/site.css still missing after the build step." >&2
+    exit 1
+fi
+
+echo "==> [7/10] Django setup"
 cd "$APP_DIR"
 sudo -u "$APP_USER" bash -c "set -a && source .env && set +a && \
     export DJANGO_SETTINGS_MODULE=config.settings.production && \
@@ -142,10 +166,15 @@ sudo -u "$APP_USER" bash -c "set -a && source .env && set +a && \
     venv/bin/python manage.py seed_data && \
     venv/bin/python manage.py create_admin"
 
-echo "==> [7/9] systemd unit"
+echo "==> [8/10] systemd unit"
 cp "$APP_DIR/scripts/siphira.service" /etc/systemd/system/siphira.service
 systemctl daemon-reload
-systemctl enable --now siphira
+systemctl enable siphira
+# `enable --now` alone starts a stopped unit but leaves a RUNNING one on its old
+# code. Since gunicorn uses --preload, settings and the static manifest are read
+# once at import, so a re-run after pulling new code must genuinely restart or
+# it silently keeps serving the previous build.
+systemctl restart siphira
 sleep 3
 if [ "$(systemctl is-active siphira)" != "active" ]; then
     echo "  ERROR: service failed to start. journalctl -u siphira -n 40" >&2
@@ -154,7 +183,7 @@ if [ "$(systemctl is-active siphira)" != "active" ]; then
 fi
 echo "    siphira.service active on :$PORT"
 
-echo "==> [8/9] nginx (HTTP) + TLS certificate"
+echo "==> [9/10] nginx (HTTP) + TLS certificate"
 # This host gets its OWN certificate rather than being added to the shared
 # fluximpact.org SAN cert. `certbot --expand` would rewrite the certificate
 # that 11 other names depend on; a separate cert is the same outcome with no
@@ -196,7 +225,7 @@ else
     fi
 fi
 
-echo "==> [9/9] nginx (TLS)"
+echo "==> [10/10] nginx (TLS)"
 cp "$APP_DIR/scripts/nginx-siphira.conf" /etc/nginx/sites-available/siphira
 ln -sf /etc/nginx/sites-available/siphira /etc/nginx/sites-enabled/siphira
 if nginx -t 2>/dev/null; then

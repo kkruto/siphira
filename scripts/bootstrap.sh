@@ -194,10 +194,17 @@ if nginx -t 2>/dev/null; then
     systemctl reload nginx
     echo "    nginx reloaded — $DOMAIN served over TLS with its own certificate"
 else
-    echo "  ERROR: nginx config test failed — rolling back to no vhost:" >&2
-    nginx -t >&2
+    # Disable the symlink FIRST. A broken file left in sites-enabled is worse
+    # than a failed deploy: nginx keeps serving its in-memory config, so
+    # everything looks fine until the next restart or reboot — at which point
+    # nginx refuses to start and takes every site on the box down with it.
     rm -f /etc/nginx/sites-enabled/siphira
-    systemctl reload nginx
+    echo "  ERROR: nginx config test failed — vhost disabled, other sites untouched:" >&2
+    # `|| true` is essential: nginx -t exits non-zero here by definition, and
+    # without it the ERR trap fires and aborts the script before the cleanup
+    # below ever runs. That is exactly how the broken symlink survived once.
+    nginx -t >&2 2>&1 || true
+    systemctl reload nginx || true
     exit 1
 fi
 

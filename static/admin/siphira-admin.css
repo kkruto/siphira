@@ -43,11 +43,43 @@ html[data-theme="light"] {
 
 body { font-family: var(--font-family-primary); }
 
-#branding h1, #branding h1 a:link, #branding h1 a:visited {
+#branding h1, #branding h1 a:link, #branding h1 a:visited,
+#site-name a:link, #site-name a:visited {
   color: #D6C6B8;
   font-weight: 800;
+  font-size: 20px;
   letter-spacing: -0.01em;
+  text-decoration: none;
 }
+
+/* Quick links in the header — admin is for writing, Studio is for everything
+   else, and she should never have to remember the URL. */
+.siphira-quicklinks {
+  display: inline-flex;
+  gap: 14px;
+  margin-left: 18px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.siphira-quicklinks a:link,
+.siphira-quicklinks a:visited {
+  color: #FAFAF9;
+  opacity: 0.75;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+.siphira-quicklinks a:hover {
+  opacity: 1;
+  border-bottom-color: #84A98C;
+}
+
+.siphira-footer {
+  padding: 18px 40px 28px;
+  font-size: 12px;
+  color: #6B7280;
+}
+.siphira-footer a { color: #6B8E74; font-weight: 700; }
 
 /* Rounded, softer surfaces to match the public site. */
 .module,

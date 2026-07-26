@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{# Overriding base_site.html is what makes the branding global. Attaching the
+   stylesheet through a ModelAdmin.Media class only reaches that model's own
+   change form — the login page, the index and every other model stay stock
+   Django blue. #}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Siphira John{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/siphira-admin.css' %}">
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}">Siphira John</a>
+</div>
+{% if user.is_authenticated and user.is_staff %}
+  <div class="siphira-quicklinks">
+    <a href="/studio/">Studio</a>
+    <a href="/" target="_blank" rel="noopener">View site &nearr;</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{# Django's default footer is empty; use it to point her at the friendlier
+   dashboard rather than leaving admin as the only door she knows. #}
+{% block footer %}
+  {{ block.super }}
+  {# Only once she is signed in: on the login page this link just bounces
+     straight back here, which reads as a broken link. #}
+  {% if user.is_authenticated and user.is_staff %}
+    <div class="siphira-footer">
+      Need traffic, messages or comments? Those live in
+      <a href="/studio/">Studio</a>.
+    </div>
+  {% endif %}
+{% endblock %}

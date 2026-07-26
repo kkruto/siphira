@@ -55,7 +55,9 @@ class PostAdmin(admin.ModelAdmin):
     )
 
     class Media:
-        css = {'all': ('admin/siphira-admin.css',)}
+        # The stylesheet is loaded globally by templates/admin/base_site.html;
+        # only the editor JS is page-specific, so listing the CSS here too
+        # would just fetch it twice.
         js = ('admin/markdown-preview.js',)
 
     @admin.display(description='Status')
@@ -107,7 +109,7 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
     class Media:
-        css = {'all': ('admin/siphira-admin.css',)}
+        js = ('admin/markdown-preview.js',)
 
 
 @admin.register(NowEntry)
